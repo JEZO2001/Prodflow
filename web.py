@@ -132,17 +132,36 @@ elif menu == "📈 Potencial del Yacimiento (IPR)":
         # FUNCIONES (COPIADAS DEL TXT)
         # -----------------------------
         def j(q_test, pwf_test, pr, pb, ef=1, ef2=None):
-            if pwf_test >= pb:
-                return q_test / (pr - pwf_test)
+            if ef == 1:
+                if pwf_test >= pb:
+                    return q_test / (pr - pwf_test)
+                else:
+                    return q_test / ((pr - pb) + (pb / 1.8) *
+                                     (1 - 0.2 * (pwf_test / pb) - 0.8 * (
+                                                 pwf_test / pb) ** 2))
             else:
-                return q_test / ((pr - pb) + (pb / 1.8) *
-                                 (1 - 0.2 * (pwf_test / pb) - 0.8 * (pwf_test / pb)**2))
+                return q_test / (pr - pwf_test)
+
 
         def Qb(q_test, pwf_test, pr, pb, ef=1, ef2=None):
             return j(q_test, pwf_test, pr, pb, ef, ef2) * (pr - pb)
 
+
         def AOF(q_test, pwf_test, pr, pb, ef=1, ef2=None):
-            return j(q_test, pwf_test, pr, pb, ef, ef2) * pr
+            if pr > pb:
+                return j(q_test, pwf_test, pr, pb, ef, ef2) * pr
+            else:
+                return q_test / (1 - 0.2 * (pwf_test / pr) - 0.8 * (pwf_test / pr) ** 2)
+
+
+        def Qo(q_test, pwf_test, pr, pwf, pb, ef=1, ef2=None):
+            if pwf >= pb:
+                return j(q_test, pwf_test, pr, pb, ef, ef2) * (pr - pwf)
+            else:
+                return Qb(q_test, pwf_test, pr, pb, ef, ef2) + \
+                    (j(q_test, pwf_test, pr, pb, ef, ef2) * pb / 1.8) * \
+                    (1 - 0.2 * (pwf / pb) - 0.8 * (pwf / pb) ** 2)
+
 
         # -----------------------------
         J = j(q_test, pwf_test, pr, pb, ef, ef2)
@@ -159,21 +178,35 @@ elif menu == "📈 Potencial del Yacimiento (IPR)":
         # -----------------------------
         # CURVA IPR
         # -----------------------------
-        pwf_range = np.linspace(0, pr, 50)
-        qo_vals = [j(q_test, pwf_test, pr, pb, ef, ef2) * (pr - p) for p in pwf_range]
+        pwf_values = np.linspace(0, pr, 60)
+
+        qo_values = [
+            Qo(q_test, pwf_test, pr, p, pb, ef, ef2)
+            for p in pwf_values
+        ]
 
         ipr_df = pd.DataFrame({
-            "Qo (bpd)": qo_vals,
-            "Pwf (psia)": pwf_range
+            "Pwf (psia)": pwf_values,
+            "Qo (bpd)": qo_values
         })
 
         fig = px.line(
             ipr_df,
             x="Qo (bpd)",
             y="Pwf (psia)",
-            title="Curva IPR"
+            title="Curva IPR",
+            markers=True
         )
-        #fig.update_yaxes(autorange="reversed")
+
+        """fig.update_yaxes(
+            autorange="reversed",
+            title="Pwf (psia)"
+        )"""
+
+        fig.update_xaxes(
+            title="Qo (bpd)"
+        )
+
         st.plotly_chart(fig, use_container_width=True)
 
         st.subheader("Tabla de Caudales y Presiones")
