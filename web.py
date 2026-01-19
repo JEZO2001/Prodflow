@@ -101,7 +101,8 @@ if menu == "📊 Historial de Producción":
     st.header("📊 Historial de Producción – Campo Volve")
 
     st.video(
-        "Resources/Field_Volve.mp4"
+        "Resources/Field_Volve.mp4",
+        width=300
     )
 
     well_list = daily_df["NPD_WELL_BORE_NAME"].dropna().unique()
