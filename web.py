@@ -198,10 +198,6 @@ elif menu == "📈 Potencial del Yacimiento (IPR)":
             markers=True
         )
 
-        """fig.update_yaxes(
-            autorange="reversed",
-            title="Pwf (psia)"
-        )"""
 
         fig.update_xaxes(
             title="Qo (bpd)"
