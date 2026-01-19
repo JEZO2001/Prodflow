@@ -13,6 +13,16 @@ st.set_page_config(
 )
 
 # ===============================
+# SIDEBAR (LOGO Y TÍTULO)
+# ===============================
+# Esto hará que el logo y el título aparezcan arriba del menú
+st.sidebar.image("Resources/logo.png", width=100)
+st.sidebar.title("ProdFlow")
+st.sidebar.caption("Ingeniería de Producción")
+st.sidebar.divider()
+
+
+# ===============================
 # LOGO
 # ===============================
 col1, col2 = st.columns([1, 5])
@@ -247,7 +257,7 @@ elif menu == "📈 Potencial del Yacimiento (IPR)":
             x="Qo (bpd)",
             y="Pwf (psia)",
             title="Curva IPR",
-            markers=True
+            markers=True)
 
 
 
