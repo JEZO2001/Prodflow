@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+from PIL import Image
 
 # ===============================
 # CONFIGURACIÓN GENERAL
@@ -50,8 +51,8 @@ menu = st.sidebar.selectbox(
 # ==========================================================
 if menu == "🏠 Inicio":
     st.title("¡Bienvenido a ProdFlow!")
-
-    st.image("Resources/field-volve.png", use_container_width=True)
+    imagen = Image.open("Resources/field- volve.png")
+    st.image(imagen, use_container_width=True)
 
     st.markdown("""
     ### La Plataforma Integral para Ingeniería de Producción
