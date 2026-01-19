@@ -8,7 +8,7 @@ import plotly.express as px
 # ===============================
 st.set_page_config(
     page_title="ProdFlow",
-    page_icon="logo.png",
+    page_icon="Resources/logo.png",
     layout="wide"
 )
 
@@ -213,4 +213,103 @@ elif menu == "📈 Potencial del Yacimiento (IPR)":
 # ==========================================================
 else:
     st.header("🔧 Análisis Nodal")
-    st.warning("Esta sección será desarrollada próximamente.")
+
+    st.subheader("Parámetros de Diseño de Tubería (VLP)")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        thp = st.number_input("Presión de cabezal (THP) [psia]", value=250.0)
+        depth = st.number_input("Profundidad vertical (TVD) [ft]", value=6000.0)
+        gravity_grad = st.number_input("Gradiente estático [psi/ft]", value=0.433)
+
+    with col2:
+        id_tubing = st.selectbox("Diámetro interno de tubería (ID) [in]",
+                                 [1.995, 2.441, 2.992])
+        c_friction = st.number_input("Constante de fricción (simplificada)",
+                                     value=0.000000002)
+
+    # Reutilizamos parámetros del IPR para el cálculo del punto de flujo
+    st.divider()
+    st.subheader("Parámetros del Yacimiento (IPR)")
+    col3, col4 = st.columns(2)
+    with col3:
+        pr_n = st.number_input("Presión del yacimiento (Pr) [psia]", value=3000.0,
+                               key="pr_n")
+        pb_n = st.number_input("Presión de burbuja (Pb) [psia]", value=1500.0,
+                               key="pb_n")
+    with col4:
+        q_test_n = st.number_input("Caudal de prueba (q_test) [bpd]", value=1000.0,
+                                   key="q_test_n")
+        pwf_test_n = st.number_input("Pwf de prueba [psia]", value=2500.0,
+                                     key="pwf_test_n")
+
+    if st.button("Realizar Análisis Nodal"):
+
+        # ---------------------------------------------------------
+        # FUNCIONES BASADAS EN EL DOCUMENTO (Celdas 19-35, 55-59)
+        # ---------------------------------------------------------
+
+        # Función IPR (Vogel/Darcy combinada)
+        def Qo_IPR(q_test, pwf_test, pr, pwf, pb):
+            j_val = q_test / (pr - pwf_test)
+            if pwf >= pb:
+                return j_val * (pr - pwf)
+            else:
+                qb = j_val * (pr - pb)
+                return qb + (j_val * pb / 1.8) * (
+                            1 - 0.2 * (pwf / pb) - 0.8 * (pwf / pb) ** 2)
+
+
+        # Función VLP simplificada (Basada en la lógica de las celdas 19 y 35)
+        # Pwf = THP + Pgravity + Pfriction
+        def Pwf_VLP(q, thp, depth, grad, c_fric, diam):
+            p_gravity = depth * grad
+            # Simplificación de la caída por fricción observada en el dataframe del documento
+            p_friction = c_fric * (q ** 2) / (diam ** 5) * depth
+            return thp + p_gravity + p_friction
+
+
+        # -----------------------------
+        # CÁLCULOS DE CURVAS
+        # -----------------------------
+        rates = np.linspace(0, Qo_IPR(q_test_n, pwf_test_n, pr_n, 0, pb_n), 50)
+
+        ipr_pwf = [pr_n if r == 0 else (None) for r in rates]  # Inicializar
+        # Invertimos el cálculo para graficar Pwf vs Q
+        # Para simplificar, generamos puntos de Pwf y calculamos Q
+        pwf_range = np.linspace(0, pr_n, 50)
+        ipr_data = pd.DataFrame({
+            "Q": [Qo_IPR(q_test_n, pwf_test_n, pr_n, p, pb_n) for p in pwf_range],
+            "Pwf": pwf_range,
+            "Tipo": "IPR"
+        })
+
+        vlp_data = pd.DataFrame({
+            "Q": rates,
+            "Pwf": [Pwf_VLP(q, thp, depth, gravity_grad, c_friction, id_tubing) for q in
+                    rates],
+            "Tipo": "VLP"
+        })
+
+        nodal_df = pd.concat([ipr_data, vlp_data])
+
+        # -----------------------------
+        # GRÁFICO
+        # -----------------------------
+        fig = px.line(
+            nodal_df,
+            x="Q",
+            y="Pwf",
+            color="Tipo",
+            title=f"Análisis Nodal - Tubing {id_tubing} in",
+            labels={"Q": "Caudal (bpd)", "Pwf": "Presión de Fondo (psia)"}
+        )
+
+        # Limitar el eje Y para mejor visibilidad
+        fig.update_yaxes(range=[0, pr_n + 500])
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.success(
+            "El punto de intersección representa el caudal óptimo de producción para el diámetro seleccionado.")
