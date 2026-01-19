@@ -23,16 +23,63 @@ with col2:
     st.subheader("Aplicación de Ingeniería de Producción")
 
 # ===============================
-# MENÚ PRINCIPAL
+# MENÚ PRINCIPAL (Actualizado)
 # ===============================
 menu = st.sidebar.selectbox(
     "Menú principal",
     [
+        "🏠 Inicio",
         "📊 Historial de Producción",
         "📈 Potencial del Yacimiento (IPR)",
-        "🔧 Análisis Nodal (Próximamente)"
+        "🔧 Análisis Nodal"
     ]
 )
+
+# ==========================================================
+# SECCIÓN INICIO – PRESENTACIÓN
+# ==========================================================
+if menu == "🏠 Inicio":
+    st.title("¡Bienvenido a ProdFlow!")
+
+    st.markdown("""
+    ### La Plataforma Integral para Ingeniería de Producción
+    **ProdFlow** es una herramienta diseñada para optimizar el análisis y la toma de decisiones en el sector de petróleo y gas. 
+    A través de esta aplicación, puedes gestionar datos complejos de yacimientos y pozos de manera visual e intuitiva.
+    """)
+
+    # Imagen descriptiva del flujo de producción
+    #
+
+    st.divider()
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.info("### 🚀 Nuestra Misión")
+        st.write("""
+        Facilitar a ingenieros y estudiantes las herramientas de cálculo necesarias para:
+        * Monitorear el historial de producción de campos reales.
+        * Evaluar el potencial de entrega del yacimiento (IPR).
+        * Realizar optimizaciones mediante Análisis Nodal.
+        """)
+
+    with col2:
+        st.success("### 🛠️ Herramientas Disponibles")
+        st.write("""
+        1. **Historial de Producción:** Visualización de Qo y Qw con datos del Campo Volve.
+        2. **Análisis IPR:** Modelado de curvas Darcy y Vogel para pozos saturados y subsaturados.
+        3. **Análisis Nodal:** Evaluación del sistema completo (VLP vs IPR) y cálculo de presión del sistema.
+        """)
+
+    st.divider()
+
+    with st.expander("📌 Instrucciones de uso"):
+        st.write("""
+        Para comenzar, selecciona una de las opciones en el **Menú Principal** situado a la izquierda:
+        - Utiliza los filtros en cada sección para seleccionar pozos específicos.
+        - Puedes descargar los datos procesados directamente desde las tablas generadas.
+        - Los gráficos son interactivos: puedes hacer zoom y guardar capturas de pantalla.
+        """)
 
 # ===============================
 # CARGA DE DATA
@@ -196,7 +243,7 @@ elif menu == "📈 Potencial del Yacimiento (IPR)":
             y="Pwf (psia)",
             title="Curva IPR",
             markers=True
-        )
+
 
 
         fig.update_xaxes(
@@ -208,108 +255,162 @@ elif menu == "📈 Potencial del Yacimiento (IPR)":
         st.subheader("Tabla de Caudales y Presiones")
         st.dataframe(ipr_df)
 
+
+
+
+
+
 # ==========================================================
 # SECCIÓN 3 – ANÁLISIS NODAL
 # ==========================================================
-else:
+elif menu == "🔧 Análisis Nodal":
     st.header("🔧 Análisis Nodal")
 
-    st.subheader("Parámetros de Diseño de Tubería (VLP)")
-
+    # --- PARÁMETROS DE ENTRADA (Basados en el documento) ---
+    st.subheader("Configuración del Sistema (VLP)")
     col1, col2 = st.columns(2)
 
     with col1:
-        thp = st.number_input("Presión de cabezal (THP) [psia]", value=250.0)
-        depth = st.number_input("Profundidad vertical (TVD) [ft]", value=6000.0)
-        gravity_grad = st.number_input("Gradiente estático [psi/ft]", value=0.433)
+        thp = st.number_input("Presión de cabezal (THP) [psia]", value=360.0)
+        wc = st.number_input("Corte de agua (WC)", value=0.9, min_value=0.0,
+                             max_value=1.0)
+        api = st.number_input("Gravedad API del crudo", value=20.0)
+        sg_h2o = st.number_input("Gravedad específica del agua (SGw)", value=1.09)
 
     with col2:
-        id_tubing = st.selectbox("Diámetro interno de tubería (ID) [in]",
-                                 [1.995, 2.441, 2.992])
-        c_friction = st.number_input("Constante de fricción (simplificada)",
-                                     value=0.000000002)
+        id_tubing = st.number_input("Diámetro interno (ID) [in]", value=3.5)
+        tvd = st.number_input("Profundidad TVD [ft]", value=9000.0)
+        md = st.number_input("Profundidad MD [ft]", value=10500.0)
+        c_hw = st.number_input("Constante de rugosidad (C)", value=120.0)
 
-    # Reutilizamos parámetros del IPR para el cálculo del punto de flujo
-    st.divider()
     st.subheader("Parámetros del Yacimiento (IPR)")
     col3, col4 = st.columns(2)
     with col3:
         pr_n = st.number_input("Presión del yacimiento (Pr) [psia]", value=3000.0,
                                key="pr_n")
-        pb_n = st.number_input("Presión de burbuja (Pb) [psia]", value=1500.0,
+        pb_n = st.number_input("Presión de burbuja (Pb) [psia]", value=2300.0,
                                key="pb_n")
     with col4:
-        q_test_n = st.number_input("Caudal de prueba (q_test) [bpd]", value=1000.0,
-                                   key="q_test_n")
-        pwf_test_n = st.number_input("Pwf de prueba [psia]", value=2500.0,
-                                     key="pwf_test_n")
+        q_test_n = st.number_input("Caudal de prueba (q_test) [bpd]", value=1500.0,
+                                   key="qt_n")
+        pwf_test_n = st.number_input("Pwf de prueba (psia)", value=2400.0, key="pwft_n")
 
-    if st.button("Realizar Análisis Nodal"):
+    if st.button("Ejecutar Análisis Nodal"):
+        import plotly.graph_objects as go
+
 
         # ---------------------------------------------------------
-        # FUNCIONES BASADAS EN EL DOCUMENTO (Celdas 19-35, 55-59)
+        # FUNCIONES EXTRAÍDAS DEL DOCUMENTO (Celdas 8, 9, 10, 11)
         # ---------------------------------------------------------
+        def sg_oil(API):
+            return 141.5 / (131.5 + API)
 
-        # Función IPR (Vogel/Darcy combinada)
-        def Qo_IPR(q_test, pwf_test, pr, pwf, pb):
-            j_val = q_test / (pr - pwf_test)
-            if pwf >= pb:
-                return j_val * (pr - pwf)
+
+        def sg_avg(API, wc, sg_h2o):
+            return wc * sg_h2o + (1 - wc) * sg_oil(API)
+
+
+        def gradient_avg(API, wc, sg_h2o):
+            return sg_avg(API, wc, sg_h2o) * 0.433
+
+
+        def f_darcy(Q, ID, C=120):
+            if Q <= 0: return 0
+            return (2.083 * (
+                        ((100 * Q) / (34.3 * C)) ** 1.85 * (1 / ID) ** 4.8655)) / 1000
+
+
+        # Funciones de IPR (Basadas en celdas 6 y 7)
+        # Reutilizamos j y aof definidas previamente o las calculamos aquí
+        def j_local(q_test, pwf_test, pr, pb):
+            if pwf_test >= pb:
+                return q_test / (pr - pwf_test)
             else:
-                qb = j_val * (pr - pb)
-                return qb + (j_val * pb / 1.8) * (
-                            1 - 0.2 * (pwf / pb) - 0.8 * (pwf / pb) ** 2)
+                return q_test / ((pr - pb) + (pb / 1.8) * (
+                            1 - 0.2 * (pwf_test / pb) - 0.8 * (pwf_test / pb) ** 2))
 
 
-        # Función VLP simplificada (Basada en la lógica de las celdas 19 y 35)
-        # Pwf = THP + Pgravity + Pfriction
-        def Pwf_VLP(q, thp, depth, grad, c_fric, diam):
-            p_gravity = depth * grad
-            # Simplificación de la caída por fricción observada en el dataframe del documento
-            p_friction = c_fric * (q ** 2) / (diam ** 5) * depth
-            return thp + p_gravity + p_friction
+        def pwf_darcy(q_test, pwf_test, q, pr, pb):
+            j_val = j_local(q_test, pwf_test, pr, pb)
+            return pr - (q / j_val) if j_val != 0 else pr
 
 
-        # -----------------------------
-        # CÁLCULOS DE CURVAS
-        # -----------------------------
-        rates = np.linspace(0, Qo_IPR(q_test_n, pwf_test_n, pr_n, 0, pb_n), 50)
+        # ---------------------------------------------------------
+        # CÁLCULOS PARA EL DATAFRAME (Lógica Celda 50 y 59)
+        # ---------------------------------------------------------
+        # Definimos un rango de caudales (de 0 a un valor estimado de AOF)
+        j_val = j_local(q_test_n, pwf_test_n, pr_n, pb_n)
+        q_max_est = j_val * pr_n * 1.2  # Estimación para el rango del gráfico
+        q_steps = np.linspace(0, q_max_est, 15)
 
-        ipr_pwf = [pr_n if r == 0 else (None) for r in rates]  # Inicializar
-        # Invertimos el cálculo para graficar Pwf vs Q
-        # Para simplificar, generamos puntos de Pwf y calculamos Q
-        pwf_range = np.linspace(0, pr_n, 50)
-        ipr_data = pd.DataFrame({
-            "Q": [Qo_IPR(q_test_n, pwf_test_n, pr_n, p, pb_n) for p in pwf_range],
-            "Pwf": pwf_range,
-            "Tipo": "IPR"
-        })
+        g_avg = gradient_avg(api, wc, sg_h2o)
+        p_gravity = g_avg * tvd
 
-        vlp_data = pd.DataFrame({
-            "Q": rates,
-            "Pwf": [Pwf_VLP(q, thp, depth, gravity_grad, c_friction, id_tubing) for q in
-                    rates],
-            "Tipo": "VLP"
-        })
+        data_rows = []
+        for q in q_steps:
+            p_wf_ipr = pwf_darcy(q_test_n, pwf_test_n, q, pr_n, pb_n)
 
-        nodal_df = pd.concat([ipr_data, vlp_data])
+            f_val = f_darcy(q, id_tubing, c_hw)
+            f_ft = f_val * md
+            p_friction = f_ft * g_avg
+            p_o_vlp = thp + p_gravity + p_friction
 
-        # -----------------------------
-        # GRÁFICO
-        # -----------------------------
-        fig = px.line(
-            nodal_df,
-            x="Q",
-            y="Pwf",
-            color="Tipo",
-            title=f"Análisis Nodal - Tubing {id_tubing} in",
-            labels={"Q": "Caudal (bpd)", "Pwf": "Presión de Fondo (psia)"}
+            p_sys = p_o_vlp - p_wf_ipr  # Presión del sistema (Celda 50)
+
+            data_rows.append({
+                "Q(bpd)": round(q, 2),
+                "Pwf(psia)": round(p_wf_ipr, 2),
+                "Pgravity(psia)": round(p_gravity, 2),
+                "f": round(f_val, 6),
+                "Pf(psia)": round(p_friction, 2),
+                "Po(psia)": round(p_o_vlp, 2),
+                "Psys(psia)": round(p_sys, 2)
+            })
+
+        df_nodal = pd.DataFrame(data_rows)
+
+        # ---------------------------------------------------------
+        # GRÁFICA DE ANÁLISIS NODAL (Basada en Celda 54)
+        # ---------------------------------------------------------
+        fig = go.Figure()
+
+        # Curva IPR
+        fig.add_trace(go.Scatter(x=df_nodal["Q(bpd)"], y=df_nodal["Pwf(psia)"],
+                                 name="IPR (Oferta)", line=dict(color='red', width=3)))
+
+        # Curva VLP
+        fig.add_trace(go.Scatter(x=df_nodal["Q(bpd)"], y=df_nodal["Po(psia)"],
+                                 name="VLP (Demanda)",
+                                 line=dict(color='green', width=3)))
+
+        # Curva del Sistema
+        fig.add_trace(go.Scatter(x=df_nodal["Q(bpd)"], y=df_nodal["Psys(psia)"],
+                                 name="System Curve (Psys)",
+                                 line=dict(color='blue', dash='dash')))
+
+        fig.update_layout(
+            title="Análisis Nodal del Sistema",
+            xaxis_title="Caudal Q (bpd)",
+            yaxis_title="Presión (psia)",
+            hovermode="x unified",
+            template="plotly_white",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
 
-        # Limitar el eje Y para mejor visibilidad
+        # Ajuste de rango para visualizar el cruce
         fig.update_yaxes(range=[0, pr_n + 500])
+        fig.update_xaxes(range=[0, q_max_est])
 
         st.plotly_chart(fig, use_container_width=True)
 
-        st.success(
-            "El punto de intersección representa el caudal óptimo de producción para el diámetro seleccionado.")
+        # ---------------------------------------------------------
+        # TABLA DE RESULTADOS
+        # ---------------------------------------------------------
+        st.subheader("Resultados del Sistema")
+        st.dataframe(df_nodal, use_container_width=True)
+
+        # Identificación del punto de cruce (opcional)
+        interseccion = df_nodal.iloc[(df_nodal['Psys(psia)']).abs().argsort()[:1]]
+        st.info(
+            f"El punto de operación estimado es cercano a **{interseccion['Q(bpd)'].values[0]} bpd** "
+            f"con una presión de fondo de **{interseccion['Po(psia)'].values[0]} psia**.")
