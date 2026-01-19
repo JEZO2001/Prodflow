@@ -51,6 +51,8 @@ menu = st.sidebar.selectbox(
 if menu == "🏠 Inicio":
     st.title("¡Bienvenido a ProdFlow!")
 
+    st.image("Resources/field-volve.png", use_container_width=True)
+
     st.markdown("""
     ### La Plataforma Integral para Ingeniería de Producción
     **ProdFlow** es una herramienta diseñada para optimizar el análisis y la toma de decisiones en el sector de petróleo y gas. 
